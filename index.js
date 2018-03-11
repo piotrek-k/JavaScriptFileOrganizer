@@ -4,6 +4,7 @@ var path = require('path');
 var del = require('del');
 var mkdirp = require('mkdirp');
 
+/// Creates file in 'filename' path with given content
 function createFile(filename, content) {
     var fd;
     try {
@@ -26,17 +27,24 @@ function createFile(filename, content) {
     }
 }
 
+/// Adds text at the end of file. Optionally you can specify path to template
+/// in which the code will be pasted
 function appendToFile(filename, text, templateFilePath) {
-    var template = fs.readFileSync(templateFilePath, { encoding: 'utf8' });
-    if (template != null) {
-        template = template.replace("//[paste code here]", text);
+    var textToAppend = text;
+    if (templateFilePath !== undefined) {
+        var template = fs.readFileSync(templateFilePath, { encoding: 'utf8' });
+        if (template != null) {
+            textToAppend = template.replace("//[paste code here]", text);
+        }
+        else {
+            console.log("No template!");
+        }
     }
-    else {
-        console.log("No template!");
-    }
-    fs.appendFileSync(filename, template + "\n\n", { flag: "a+" });
+    fs.appendFileSync(filename, textToAppend + "\n\n", { flag: "a+" });
 }
 
+/// Gets path to some folder from `originalPath` and creates exact same folder structure
+/// For each new file `createFileFunction` will be called, where you actually create that file
 function mirrorFolder(originalPath, newPath, createFileFunction) {
     if (!fs.existsSync(newPath)) {
         fs.mkdirSync(newPath);
@@ -79,14 +87,15 @@ exports.copy_to_wwwroot_wrap_in_containers = function (scripts_folder_path, deve
     //build javascript files for development
     mirrorFolder(scripts_folder_path, development_folder_path, function (fileOriginalFullPath, fileNewFullPath) {
         //Find scripts that are divided to multiple files
+        //File division can be made in files that have 'prefixes'
+        //Like '/path/to/file/About-something.js'
+        //where prefix is 'About'
         var re = /.*\\((\w+)\-\w+)\.\w+$/;
         var finalFullPath = fileNewFullPath;
         if (re.test(fileNewFullPath)) {
-            //part of larger file
             var parts = fileNewFullPath.match(re);
-            var prefix = parts[2];
-            var prefixPlusName = parts[1];
-            //console.log("parts: " + parts);
+            var prefix = parts[2]; //About
+            var prefixPlusName = parts[1]; //About-something
             finalFullPath = fileNewFullPath.replace(prefixPlusName, prefix);
             console.log("Merging " + prefixPlusName + " to " + finalFullPath + "...");
         }
