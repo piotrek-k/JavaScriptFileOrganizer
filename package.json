@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [
     "javascript",
@@ -13,5 +13,12 @@
     "js"
   ],
   "author": "Piotrek K",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "del": "^3.0.0",
+    "glob": "^7.1.2",
+    "mkdirp": "^0.5.1",
+    "mocha": "^5.0.4"
+  }
 }

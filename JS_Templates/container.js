@@ -1,0 +1,3 @@
+﻿(function () {
+    //[paste code here]
+})();

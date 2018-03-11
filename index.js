@@ -1,7 +1,8 @@
 var gulp = require('gulp');
-const fs = require('fs');
+var fs = require('fs');
 var path = require('path');
 var del = require('del');
+var mkdirp = require('mkdirp');
 
 function createFile(filename, content) {
     var fd;
@@ -59,19 +60,24 @@ function mirrorFolder(originalPath, newPath, createFileFunction) {
     });
 }
 
-exports.buildJavascript = function(){
+exports.ensure_every_view_has_javascript = function (view_folder_path, scripts_folder_path) {
     //make sure all *.cshtml files have their own *.js equivalents
-    mirrorFolder("./Views", "./Scripts", function (fileOriginalFullPath, fileNewFullPath) {
+    mirrorFolder(view_folder_path, scripts_folder_path, function (fileOriginalFullPath, fileNewFullPath) {
         //creates empty *.js files in place of *.cshtml files
         createFile(fileNewFullPath.replace(/\.[^/.]+$/, ".js"), "");
     });
+}
 
-    if(fs.readdirSync("./wwwroot/development").length > 0){
+exports.copy_to_wwwroot_wrap_in_containers = function (scripts_folder_path, development_folder_path, template_file_path) {
+    //mkDirByPathSync(development_folder_path);
+    mkdirp.sync(development_folder_path);
+
+    if (fs.readdirSync(development_folder_path).length > 0) {
         throw "development folder have to be cleaned before build";
     }
 
     //build javascript files for development
-    mirrorFolder("./Scripts", "./wwwroot/development", function (fileOriginalFullPath, fileNewFullPath) {
+    mirrorFolder(scripts_folder_path, development_folder_path, function (fileOriginalFullPath, fileNewFullPath) {
         //Find scripts that are divided to multiple files
         var re = /.*\\((\w+)\-\w+)\.\w+$/;
         var finalFullPath = fileNewFullPath;
@@ -85,6 +91,6 @@ exports.buildJavascript = function(){
             console.log("Merging " + prefixPlusName + " to " + finalFullPath + "...");
         }
 
-        appendToFile(finalFullPath, fs.readFileSync(fileOriginalFullPath), "./JS_Templates/container.js");
+        appendToFile(finalFullPath, fs.readFileSync(fileOriginalFullPath), template_file_path);
     });
 }
