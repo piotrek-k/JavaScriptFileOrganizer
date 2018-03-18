@@ -4,30 +4,30 @@ var path = require('path');
 var del = require('del');
 var mkdirp = require('mkdirp');
 
-class PathConstructor {
-    constructor(path, is_absolute) {
-        if(is_absolute){
-            this.lock_relative = true;
-            this.absolute_path = path;
-        }
-        else {
-            this.relative_path = path;
-        }
+function PathConstructor(path_to_object, is_absolute) {
+    if(is_absolute){
+        this.lock_relative = true;
+        this.absolute_path = path_to_object;
+    }
+    else {
+        this.relative_path = path_to_object;
     }
 
-    getRel(){
+    this.getRel = function(){
         if(this.lock_relative){
             throw "This path is abolsute!";
         }
         return this.relative_path;
     }
 
-    getAbs(){
+    this.getAbs = function(){
         if(this.relative_path === undefined && this.absolute_path !== undefined){
             return this.absolute_path;
         }
         return path.join(PATH_TO_MAIN, this.relative_path);
     }
+
+    return this;
 }
 
 var PATH_TO_MAIN = "";
@@ -35,6 +35,8 @@ var PATH_TO_SCRIPTS = new PathConstructor("./Scripts", false);
 var PATH_TO_DEVELOPMENT = new PathConstructor("./wwwroot/development", false);
 var PATH_TO_VIEWS = new PathConstructor("./Views", false);
 var PATH_TO_JSTEMPLATES = new PathConstructor(path.join(__dirname, "JS_Templates"), true);
+
+REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE = /<script.+src=(\'|\").+(\'|\").+script-type=(\'|\")automatically included(\'|\").*>.*<\/script>/;
 
 var is_init_completed = false;
 function path_to_absolute(p) {
@@ -60,7 +62,7 @@ function createFile(filename, content) {
             console.error(err);
         }
         else {
-            console.log(filename + " exists...");
+            console.log(filename + " already exists. Skipping...");
         }
     } finally {
         if (fd !== undefined)
@@ -93,11 +95,12 @@ function mirrorFolder(originalPath, newPath, createFileFunction) {
     fs.readdirSync(originalPath).forEach(file => {
         var fileOriginalFullPath = path.join(originalPath, file);
         var fileNewFullPath = path.join(newPath, file);
-        console.log("--- " + fileNewFullPath);
+        //console.log("--- " + fileNewFullPath);
         try {
             if (fs.lstatSync(fileOriginalFullPath).isDirectory()) {
+                console.log("---");
+                console.log("Mirroring folder... " + fileNewFullPath);
                 mirrorFolder(fileOriginalFullPath, fileNewFullPath, createFileFunction);
-                console.log("Mirroring folder... " + fileNewFullPath)
             }
             else {
                 createFileFunction(fileOriginalFullPath, fileNewFullPath);
@@ -131,12 +134,16 @@ function ensureFileContainsTemplate(pathToFile, regexToFindLine, pathToTemplate,
         var fd = fs.openSync(pathToFile, 'w+');
         fs.writeSync(fd, template, 0, 'utf8');
         fs.writeSync(fd, fileContent, template.length, 'utf8');
-        console.log("Created new <script> tag");
+        console.log("Created new <script> tag for " + pathToFile);
     }
     else {
-        console.log("<script> tag already exists");
+        console.log("<script> tag already exists in " + pathToFile);
     }
 }
+
+exports._privatesForTestPurposes = {
+    REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE: REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE
+};
 
 exports.init = function (direct_project_path) {
     console.log("jsScriptsOrganizer: project path specified to: " + direct_project_path);
@@ -164,7 +171,7 @@ exports.ensure_every_view_has_javascript = function (rel_folder_with_built_scrip
         //makes sure the origin (view file) links to script file (has <script> object that loads javascript)
         ensureFileContainsTemplate(
             fileOriginalFullPath,
-            /<script.+src=(\'|\").+(\'|\").+script-type=(\'|\")automatically included(\'|\").*\/>/,
+            REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE,
             generate_template_path(templateName),
             {
                 "path_to_script": path.join(rel_folder_with_built_scripts, path.relative(scripts_folder_path, fileNewFullPath))

@@ -57,3 +57,10 @@ describe('copy_to_wwwroot_wrap_in_containers', function () {
         // be stored in /wwwroot/development/Home/About.js
     });
 });
+
+describe('templates', function () {
+    it('scriptObjectForHtml should return true while testing with regex', function () {
+        var template = fs.readFileSync(path.join(PATH_TO_JSTEMPLATES, "scriptObjectForHtml.html"), { encoding: 'utf8' });
+        expect(main_app._privatesForTestPurposes.REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE.test(template)).to.be.true;
+    });
+});
