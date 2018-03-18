@@ -25,5 +25,6 @@ Tasks:
 
 - [x] ensure every View has Script
 - [x] wrap Scripts in containers
+- [x] link to Scripts in every connected view
 - [ ] generate variables pointing to html objects
 - [ ] generate services to allow communication between components

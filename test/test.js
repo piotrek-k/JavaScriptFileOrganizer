@@ -16,7 +16,7 @@ console.log(PATH_TO_JSTEMPLATES);
 describe('ensure_every_view_has_javascript', function () {
     before(function(){
         return del(PATH_TO_SCRIPTS).then(function(){
-            main_app.ensure_every_view_has_javascript(PATH_TO_VIEWS, PATH_TO_SCRIPTS);
+            main_app.ensure_every_view_has_javascript(PATH_TO_VIEWS, PATH_TO_SCRIPTS, "./development", path.join(PATH_TO_JSTEMPLATES, "scriptObjectForHtml.html"));
         });
     });
 
