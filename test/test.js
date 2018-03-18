@@ -1,9 +1,9 @@
 var expect = require('chai').expect;
-var main_app = require('../index');
+const path = require('path');
+var main_app = require('../index').init(path.join(__dirname,"../"));
 var fs = require('fs');
 //var glob = require("glob")
 var del = require('del');
-const path = require('path');
 
 const TEXT_TO_PUT_IN_CONTACT_JS = "CONTACT";
 const PATH_TO_MAIN_FOLDER = path.join(__dirname,"../");
@@ -16,7 +16,7 @@ console.log(PATH_TO_JSTEMPLATES);
 describe('ensure_every_view_has_javascript', function () {
     before(function(){
         return del(PATH_TO_SCRIPTS).then(function(){
-            main_app.ensure_every_view_has_javascript(PATH_TO_VIEWS, PATH_TO_SCRIPTS, "./development", path.join(PATH_TO_JSTEMPLATES, "scriptObjectForHtml.html"));
+            main_app.ensure_every_view_has_javascript("./development", "scriptObjectForHtml.html");
         });
     });
 
@@ -33,7 +33,7 @@ describe('copy_to_wwwroot_wrap_in_containers', function () {
         return del(PATH_TO_DEVELOPMENT).then(function(){
             fs.writeFileSync(path.join(PATH_TO_SCRIPTS, "/Home/Contact.js"), TEXT_TO_PUT_IN_CONTACT_JS);
 
-            main_app.copy_to_wwwroot_wrap_in_containers(PATH_TO_SCRIPTS, PATH_TO_DEVELOPMENT, path.join(PATH_TO_JSTEMPLATES, "./container.js"));
+            main_app.copy_to_wwwroot_wrap_in_containers("./container.js");
         });
     });
 
