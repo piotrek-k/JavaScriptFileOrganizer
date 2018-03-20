@@ -5,7 +5,7 @@ var del = require('del');
 var mkdirp = require('mkdirp');
 
 function PathConstructor(path_to_object, is_absolute) {
-    if(is_absolute){
+    if (is_absolute) {
         this.lock_relative = true;
         this.absolute_path = path_to_object;
     }
@@ -13,15 +13,15 @@ function PathConstructor(path_to_object, is_absolute) {
         this.relative_path = path_to_object;
     }
 
-    this.getRel = function(){
-        if(this.lock_relative){
+    this.getRel = function () {
+        if (this.lock_relative) {
             throw "This path is abolsute!";
         }
         return this.relative_path;
     }
 
-    this.getAbs = function(){
-        if(this.relative_path === undefined && this.absolute_path !== undefined){
+    this.getAbs = function () {
+        if (this.relative_path === undefined && this.absolute_path !== undefined) {
             return this.absolute_path;
         }
         return path.join(PATH_TO_MAIN, this.relative_path);
@@ -37,6 +37,7 @@ var PATH_TO_VIEWS = new PathConstructor("./Views", false);
 var PATH_TO_JSTEMPLATES = new PathConstructor(path.join(__dirname, "JS_Templates"), true);
 
 REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE = /<script.+src=(\'|\").+(\'|\").+script-type=(\'|\")automatically included(\'|\").*>.*<\/script>/;
+REGEX_DETECTING_SPLIT_JS_FILES = /.*(\\|\/)((\w+)\-\w+)\.\w+$/; //Like '/path/to/file/About-something.js'
 
 var is_init_completed = false;
 function path_to_absolute(p) {
@@ -55,6 +56,9 @@ function createFile(filename, content) {
         if (fd != null) {
             console.log("Writing to new file " + filename + "..." + content);
             fs.writeSync(fd, content);
+        }
+        else {
+            console.log(filename + " fd is null!");
         }
     }
     catch (err) {
@@ -83,15 +87,23 @@ function appendToFile(filename, text, templateFilePath) {
             console.log("No template!");
         }
     }
-    fs.appendFileSync(filename, textToAppend + "\n\n", { flag: "a+" });
+    console.log("Appending to " + filename + " texttoappend: " + textToAppend + " text: " + text);
+    try {
+        fs.appendFileSync(filename, textToAppend + "\n\n", { flag: "a+" });
+    }
+    catch (err) {
+        console.error(err);
+    }
 }
 
 /// Gets path to some folder from `originalPath` and creates exact same folder structure
 /// For each new file `createFileFunction` will be called, where you actually create that file
 function mirrorFolder(originalPath, newPath, createFileFunction) {
-    if (!fs.existsSync(newPath)) {
-        fs.mkdirSync(newPath);
-    }
+    // if (!fs.existsSync(newPath)) {
+    //     console.log(newPath + " DOESN'T EXIST");
+    //     fs.mkdirSync(newPath);
+    // }
+    mkdirp.sync(newPath);
     fs.readdirSync(originalPath).forEach(file => {
         var fileOriginalFullPath = path.join(originalPath, file);
         var fileNewFullPath = path.join(newPath, file);
@@ -142,7 +154,8 @@ function ensureFileContainsTemplate(pathToFile, regexToFindLine, pathToTemplate,
 }
 
 exports._privatesForTestPurposes = {
-    REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE: REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE
+    REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE: REGEX_DETECTING_SCRIPT_TEMPLATE_PRESENCE,
+    REGEX_DETECTING_SPLIT_JS_FILES: REGEX_DETECTING_SPLIT_JS_FILES
 };
 
 exports.init = function (direct_project_path) {
@@ -152,8 +165,8 @@ exports.init = function (direct_project_path) {
     return this;
 }
 
-function ensure_everything_is_configured(){
-    if(!is_init_completed)
+function ensure_everything_is_configured() {
+    if (!is_init_completed)
         throw "jsScriptsOrganizer: init hasn't been runned";
 }
 
@@ -198,12 +211,12 @@ exports.copy_to_wwwroot_wrap_in_containers = function (template_file) {
         //File division can be made in files that have 'prefixes'
         //Like '/path/to/file/About-something.js'
         //where prefix is 'About'
-        var re = /.*\\((\w+)\-\w+)\.\w+$/;
+        //var re = /.*\\((\w+)\-\w+)\.\w+$/; //Like '/path/to/file/About-something.js'
         var finalFullPath = fileNewFullPath;
-        if (re.test(fileNewFullPath)) {
-            var parts = fileNewFullPath.match(re);
-            var prefix = parts[2]; //About
-            var prefixPlusName = parts[1]; //About-something
+        if (REGEX_DETECTING_SPLIT_JS_FILES.test(fileNewFullPath)) {
+            var parts = fileNewFullPath.match(REGEX_DETECTING_SPLIT_JS_FILES);
+            var prefix = parts[3]; //About
+            var prefixPlusName = parts[2]; //About-something
             finalFullPath = fileNewFullPath.replace(prefixPlusName, prefix);
             console.log("Merging " + prefixPlusName + " to " + finalFullPath + "...");
         }
